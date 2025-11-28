@@ -1,0 +1,54 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class LuongAttention(nn.Module):
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.linear = nn.Linear(hidden_size, hidden_size, bias=False)
+
+    def forward(self, decoder_hidden, encoder_outputs):
+        # decoder_hidden: (B, H)  -- current decoder state
+        # encoder_outputs: (B, T, H)
+        # score = decoder_hidden^T W encoder_outputs
+        u = self.linear(encoder_outputs)  # (B, T, H)
+        dec = decoder_hidden.unsqueeze(1)  # (B,1,H)
+        score = torch.bmm(dec, u.transpose(1,2)).squeeze(1)  # (B,T)
+        attn_weights = F.softmax(score, dim=-1)  # (B,T)
+        context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs).squeeze(1)  # (B,H)
+        return context, attn_weights
+
+class LSTMWithAttention(nn.Module):
+    def __init__(self, n_features, hidden_size=128, num_layers=1, dropout=0.1, output_len=10):
+        super().__init__()
+        self.encoder = nn.LSTM(input_size=n_features, hidden_size=hidden_size, num_layers=num_layers, batch_first=True, dropout=dropout)
+        # decoder is a single-step GRU/LSTM predicting next token autoregressively
+        self.decoder_cell = nn.GRUCell(input_size=1 + hidden_size, hidden_size=hidden_size)
+        self.attn = LuongAttention(hidden_size)
+        self.out = nn.Linear(hidden_size, 1)
+        self.output_len = output_len
+
+    def forward(self, x, y_teacher=None, teacher_forcing_ratio=0.0):
+        # x: (B, T_in, n_features)
+        B = x.size(0)
+        enc_out, (h, c) = self.encoder(x)
+        # start token: zeros
+        prev = torch.zeros(B, 1, device=x.device)
+        hidden = h[-1]
+        outputs = []
+        attn_weights_all = []
+        for t in range(self.output_len):
+            context, attn_weights = self.attn(hidden, enc_out)
+            # GRUCell expects (B, input_size)
+            inp = torch.cat([prev.squeeze(-1), context], dim=1)  # (B, 1+H)
+            hidden = self.decoder_cell(inp, hidden)
+            out = self.out(hidden).squeeze(-1)  # (B,)
+            outputs.append(out.unsqueeze(1))
+            attn_weights_all.append(attn_weights.detach().cpu().numpy())
+            if y_teacher is not None and torch.rand(1).item() < teacher_forcing_ratio:
+                prev = y_teacher[:, t:t+1].to(x.device)
+            else:
+                prev = out.unsqueeze(-1)
+        preds = torch.cat(outputs, dim=1)
+        return preds, np.stack(attn_weights_all, axis=1)  # (B, T_out), (B, T_out, T_in)
+
