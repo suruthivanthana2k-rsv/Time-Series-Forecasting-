@@ -1,0 +1,16 @@
+Final optimized hyperparameters (example format):
+- model: LSTM+Luong attention
+- hidden_size: 128
+- num_layers: 2
+- dropout: 0.1
+- learning_rate: 0.001
+- input_len: 168
+- output_len: 10
+
+Final test performance (replace with your numbers):
+Model          | RMSE   | MAE    | MAPE (%)
+---------------|--------|--------|---------
+SARIMAX        | 0.812  | 0.634  | 12.4
+LSTM baseline  | 0.645  | 0.503  | 9.2
+LSTM+Attention | 0.589  | 0.462  | 8.1
+
