@@ -1,0 +1,16 @@
+yaml
+n_steps: 12000
+n_features: 5
+data_path: data/output.csv
+input_len: 168
+output_len: 10
+train_ratio: 0.7
+val_ratio: 0.15
+batch_size: 64
+epochs: 12
+hidden_size: 128
+num_layers: 2
+dropout: 0.1
+lr: 1e-3
+outputs_dir: outputs
+n_trials: 30
