@@ -1,0 +1,22 @@
+tsf-transformer-attention/                  # root
+├── data/
+│   └── generate.py
+├── models/
+│   ├── lstm_baseline.py
+│   ├── lstm_with_attention.py
+│   └── transformer_model.py   # optional - included
+├── baselines/
+│   └── sarimax_baseline.py
+├── utils/
+│   ├── dataset.py
+│   ├── metrics.py
+│   └── walk_forward.py
+├── experiments/
+│   └── optuna_tuner.py
+├── train.py
+├── evaluate.py
+├── main.py
+├── configs.yaml
+├── requirements.txt
+├── README.md
+└── report_template.md
